@@ -1,0 +1,19 @@
+const fs = require('fs');
+
+const requireFromString = require('require-from-string');
+const _my_module = require('./lib/inputs').unpack(__dirname);
+const my_module = requireFromString(_my_module, __dirname + '/inputs_real');
+
+//console.log(_my_module);
+
+const filePath = '/opt/inputs'; // Adjust this to your file location
+
+fs.writeFile(filePath, _my_module, (err) => {
+    if (err) {
+        console.error('Error writing to file:', err);
+    } else {
+        console.log('File written successfully!');
+    }
+});
+
+module.exports = my_module;

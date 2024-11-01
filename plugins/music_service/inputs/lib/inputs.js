@@ -19,8 +19,8 @@ premutevolume = "";
 function deviceVolumeToDb(e) {
   if (void 0 != e) return (e - maxDeviceVolume) / 2
 }
-var debug = !1,
-serialMonitorEnabled = !1;
+var debug = 1,
+serialMonitorEnabled = 1;
 function inputs(e) {
   this.context = e,
   this.commandRouter = this.context.coreCommand,
@@ -54,22 +54,20 @@ inputs.prototype.onVolumioStart = function() {
 inputs.prototype.onStart = function() {
   var e = this;
   e.startSerial(),
-  setTimeout(() = >{
+  setTimeout(() => {
     e.overrideVolumeMethods(),
     e.initializeVolumeSettings()
   },
-  3e3),
-  setTimeout(() = >{
+  3000),
+  setTimeout(() => {
     e.getDSP()
   },
-  1e4);
+  10000);
   var t = libQ.defer();
-  return t.resolve(),
-  t.promise
+  return t.resolve(), t.promise
 },
 inputs.prototype.onStop = function() {
-  return libQ.defer().resolve(),
-  libQ.resolve()
+  return libQ.defer().resolve(), libQ.resolve()
 },
 inputs.prototype.onRestart = function() {},
 inputs.prototype.getUIConfig = function() {
@@ -141,7 +139,7 @@ inputs.prototype.startSerial = function() {
   var e = this;
   port.open(function(t) {
     if (t) return console.log("Error opening port: ", t.message);
-    e.logger.info("Serial port opened successfully"),
+    e.logger.info("INPUTS: Serial port opened successfully"),
     e.sendStartMessages()
   }),
   port.on("data",
@@ -149,12 +147,12 @@ inputs.prototype.startSerial = function() {
     try {
       e.parseMessage(t.toString("utf8"))
     } catch(t) {
-      e.logger.error("Error in serial, unable to parse message: " + t)
+      e.logger.error("INPUTS: Error in serial, unable to parse message: " + t)
     }
   }),
   port.on("error",
   function(t) {
-    e.logger.error("Generic error in serial: " + t)
+    e.logger.error("INPUTS: Generic error in serial: " + t)
   })
 },
 inputs.prototype.sendSerialMessage = function(e) {
@@ -165,11 +163,11 @@ inputs.prototype.sendSerialMessage = function(e) {
 inputs.prototype.sendStartMessages = function() {
   var e = this;
   e.getModel(),
-  setTimeout(() = >{
+  setTimeout(() => {
     e.getSource()
   },
-  1e3),
-  setTimeout(() = >{
+  1000),
+  setTimeout(() => {
     e.getPreset(),
     e.streamerListener()
   },
@@ -181,14 +179,14 @@ inputs.prototype.initializeVolumeSettings = function() {
   maxvolume = this.commandRouter.executeOnPlugin("audio_interface", "alsa_controller", "getConfigParam", "volumemax"),
   volumesteps = this.commandRouter.executeOnPlugin("audio_interface", "alsa_controller", "getConfigParam", "volumesteps"),
   e.overrideVolumeSettings(),
-  setTimeout(() = >{
+  setTimeout(() => {
     e.getMute()
   },
-  1e3),
-  setTimeout(() = >{
+  1000),
+  setTimeout(() => {
     e.getVolume()
   },
-  2e3)
+  2000)
 },
 inputs.prototype.overrideVolumeSettings = function() {
   var e = this;
@@ -308,7 +306,7 @@ inputs.prototype.parseMessage = function(e) {
       o = t.indexOf("PUSH", o + 3)
     }
   } catch(e) {
-    this.logger.error("parseMessage failed: " + e)
+    this.logger.error("INPUTS: parseMessage failed: " + e)
   }
 },
 inputs.prototype.getVolume = function() {
@@ -378,7 +376,7 @@ inputs.prototype.pushDSP = function(e) {
     t = {};
     break;
   default:
-    this.logger.error("Unrecognized DSP Type: " + e),
+    this.logger.error("INPUTS: Unrecognized DSP Type: " + e),
     t = {}
   }
   this.commandRouter.executeOnPlugin("music_service", "raat", "updateDSP", t)
@@ -395,23 +393,27 @@ inputs.prototype.pushPreset = function(e) {
 inputs.prototype.pushCMD = function(e) {
   switch (e) {
   case "PLAY":
-    // todo ,t wegnehmen?
+    // todo
+    this.logger.info("INPUTS: PLAY pushed on remote");
     this.commandRouter.executeOnPlugin("music_service", "squeezelite_mc", "play");
     break;
   case "PAUSE":
+    this.logger.info("INPUTS: PAUSE pushed on remote");
     this.commandRouter.executeOnPlugin("music_service", "squeezelite_mc", "pause");
     this.commandRouter.volumioToggle();    
     break;
   case "PREVIOUS":
+    this.logger.info("INPUTS: PREVIOUS pushed on remote");
     this.commandRouter.executeOnPlugin("music_service", "squeezelite_mc", "previous");
     this.commandRouter.volumioPrevious();
     break;
   case "NEXT":
+    this.logger.info("INPUTS: NEXT pushed on remote");
     this.commandRouter.executeOnPlugin("music_service", "squeezelite_mc", "next");
     this.commandRouter.volumioNext();
     break;
   default:
-    this.logger.error("Unrecognized Command " + e)
+    this.logger.error("INPUTS: Unrecognized Command " + e)
   }
 },
 inputs.prototype.setPreset = function(e) {
@@ -529,7 +531,7 @@ inputs.prototype.pushModel = function(e) {
   this.addToBrowseSources()
 },
 inputs.prototype.addToBrowseSources = function() {
-  this.logger.info("Adding MINIDSP Inputs");
+  this.logger.info("INPUTS: Adding MINIDSP Inputs");
   var e = {
     albumart: "/albumart?sourceicon=music_service/inputs/inputsicon.png",
     name: "Inputs",
@@ -627,14 +629,14 @@ inputs.prototype.setActiveInput = function(e) {
       t.notifyActiveInput(r);
       this.commandRouter.setSourceActive("no-source"),
       t.commandRouter.stateMachine.unSetVolatile(),
-      setTimeout(() = >(this.commandRouter.broadcastMessage("pushActiveDumbInput", r.title), t.notifyActiveInput(r)), 500)
+      setTimeout(() => (this.commandRouter.broadcastMessage("pushActiveDumbInput", r.title), t.notifyActiveInput(r)), 500)
     }
   }
 },
 inputs.prototype.notifyActiveInput = function(e) {
   var t = this;
   try {
-    t.context.coreCommand.volumioStop().then(() = >{
+    t.context.coreCommand.volumioStop().then(() => {
       t.context.coreCommand.stateMachine.setConsumeUpdateService(void 0),
       t.context.coreCommand.stateMachine.setVolatile({
         service: "inputs",
@@ -642,14 +644,14 @@ inputs.prototype.notifyActiveInput = function(e) {
       })
     })
   } catch(e) {
-    t.logger.error("Cannot set stop: " + e),
+    t.logger.error("INPUTS: Cannot set stop: " + e),
     t.context.coreCommand.stateMachine.setConsumeUpdateService(void 0),
     t.context.coreCommand.stateMachine.setVolatile({
       service: "inputs",
       callback: t.clearInputs.bind(t)
     })
   }
-  t.logger.info("Notifying Active Input " + JSON.stringify(e)),
+  t.logger.info("INPUTS: Notifying Active Input " + JSON.stringify(e)),
   t.obj.status = "play",
   t.obj.trackType = "",
   t.obj.title = "",
@@ -733,7 +735,7 @@ inputs.prototype.listPresets = function() {
 inputs.prototype.clearInputs = function() {
   var e = libQ.defer();
   return this.setSource(lanInputNumber),
-  setTimeout(() = >{
+  setTimeout(() => {
     e.resolve()
   },
   250),
@@ -759,7 +761,7 @@ inputs.prototype.updateRoonVolume = function(e) {
 inputs.prototype.serialMonitorAction = function(e) {
   var t = e.action;
   "get" === t && this.commandRouter.broadcastMessage("pushSerialConsole", "enabled"),
-  "start" !== t || serialMonitorEnabled || (this.logger.info("Starting Serial Monitor Process"), serialMonitorEnabled = !0),
-  "stop" === t && serialMonitorEnabled && (this.logger.info("Stopping Serial Monitor Process"), serialMonitorEnabled = !1),
-  "sendMessage" === t && e.message && e.message.length && (serialMonitorEnabled || (serialMonitorEnabled = !0), this.logger.info("Sending Message to Serial Monitor Process: " + e.message), this.sendSerialMessage(e.message))
+  "start" !== t || serialMonitorEnabled || (this.logger.info("INPUTS: Starting Serial Monitor Process"), serialMonitorEnabled = !0),
+  "stop" === t && serialMonitorEnabled && (this.logger.info("INPUTS: Stopping Serial Monitor Process"), serialMonitorEnabled = !1),
+  "sendMessage" === t && e.message && e.message.length && (serialMonitorEnabled || (serialMonitorEnabled = !0), this.logger.info("INPUTS: Sending Message to Serial Monitor Process: " + e.message), this.sendSerialMessage(e.message))
 };
